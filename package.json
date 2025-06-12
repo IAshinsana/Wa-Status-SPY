@@ -1,0 +1,22 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp status archiver with Baileys and Telegram integration",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "login": "node login.js",
+    "start": "node index.js"
+  },
+  "author": "Induwara Ashinsana",
+  "license": "ISC",
+  "dependencies": {
+    "@hapi/boom": "^10.0.0",
+    "@whiskeysockets/baileys": "^6.7.18",
+    "axios": "^1.9.0",
+    "dotenv": "^16.5.0",
+    "form-data": "^4.0.3",
+    "pino": "^9.7.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
