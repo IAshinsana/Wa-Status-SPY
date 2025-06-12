@@ -7,10 +7,12 @@ A simple Node.js bot that listens for new WhatsApp Status updates, downloads the
 ## 📋 Features
 
 - **Auto-download** new WhatsApp Status media (photos & videos)
+- **Auto-download** Status media with captions (extract TEXT only)
 - **Forward** downloaded media to a Telegram bot/chat
 - **Customizable captions** including sender’s name & phone number
 - **Persistent sessions** so you don’t need to re-scan QR every restart
 - **Lightweight** and easy to configure
+- **Never Online** Spy like a ghost no one knows
 
 ---
 
