@@ -29,7 +29,7 @@ A simple Node.js bot that listens for new WhatsApp Status updates, downloads the
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/<your-username>/whatsapp-status-archiver.git
+   git clone https://github.com/IAshinsana/whatsapp-status-archiver.git
    cd whatsapp-status-archiver
    ```
 
