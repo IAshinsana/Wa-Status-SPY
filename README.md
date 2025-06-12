@@ -32,7 +32,7 @@ A simple Node.js bot that listens for new WhatsApp Status updates, downloads the
 
    ```bash
    https://github.com/IAshinsana/Wa-Status-SPY.git
-   cd whatsapp-status-archiver
+   cd Wa-Status-SPY
    ```
 
 2. **Install dependencies**
