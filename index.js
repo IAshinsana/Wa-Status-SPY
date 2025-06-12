@@ -36,7 +36,7 @@ const FormData = require('form-data')
       sock.sendReadMessage     = async () => {}
     }
     if (connection === 'close' &&
-      lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut) {
+        lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut) {
       console.error('❌ Logged out—delete auth_info and rerun login.js')
       process.exit(1)
     }
@@ -55,53 +55,47 @@ const FormData = require('form-data')
 
   console.log('\n🔍 Listening for new WhatsApp Status updates…')
 
-  // Listen for status@broadcast updates
+  // Real-time status listener
   sock.ev.on('messages.upsert', async up => {
     if (up.type !== 'notify') return
-
     for (const msg of up.messages) {
       try {
-        // Only status broadcasts
         if (!msg.key.remoteJid?.endsWith('status@broadcast')) continue
         if (!msg.message) continue
 
-        // Identify sender & dedupe
         const userJid = msg.key.participant || msg.key.remoteJid.split(':')[0]
         const phone   = userJid.split('@')[0]
         const id      = `${phone}_${msg.key.id}`
         if (seen.has(id)) continue
         seen.add(id)
 
-        // Extract any text caption
         const m = msg.message
         let text = null
-        if      (m.conversation)                                       text = m.conversation
-        else if (m.extendedTextMessage?.text)                         text = m.extendedTextMessage.text
-        else if (m.imageMessage?.caption)                             text = m.imageMessage.caption
-        else if (m.videoMessage?.caption)                             text = m.videoMessage.caption
-        else if (m.ephemeralMessage?.message?.conversation)           text = m.ephemeralMessage.message.conversation
+        if      (m.conversation)                                         text = m.conversation
+        else if (m.extendedTextMessage?.text)                            text = m.extendedTextMessage.text
+        else if (m.imageMessage?.caption)                                text = m.imageMessage.caption
+        else if (m.videoMessage?.caption)                                text = m.videoMessage.caption
+        else if (m.ephemeralMessage?.message?.conversation)             text = m.ephemeralMessage.message.conversation
         else if (m.ephemeralMessage?.message?.extendedTextMessage?.text) text = m.ephemeralMessage.message.extendedTextMessage.text
-        else if (m.ephemeralMessage?.message?.imageMessage?.caption)  text = m.ephemeralMessage.message.imageMessage.caption
-        else if (m.ephemeralMessage?.message?.videoMessage?.caption)  text = m.ephemeralMessage.message.videoMessage.caption
+        else if (m.ephemeralMessage?.message?.imageMessage?.caption)     text = m.ephemeralMessage.message.imageMessage.caption
+        else if (m.ephemeralMessage?.message?.videoMessage?.caption)     text = m.ephemeralMessage.message.videoMessage.caption
 
-        // Detect media type
         let type = null
         if      (m.imageMessage || m.ephemeralMessage?.message?.imageMessage) type = 'photo'
         else if (m.videoMessage || m.ephemeralMessage?.message?.videoMessage) type = 'video'
-        else if (m.audioMessage)                                             type = 'audio'
-        else if (m.documentMessage)                                          type = 'document'
+        else if (m.audioMessage)                                            type = 'audio'
+        else if (m.documentMessage)                                         type = 'document'
 
-        // Lookup display name
         const name = contacts[userJid] || msg.pushName || 'Unknown'
 
-        // If text-only status
+        // Text-only status
         if (text && !type) {
           console.log(`\n📄 Text status from ${phone} (${name}): ${text}`)
           await axios.post(
             `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
             {
               chat_id: process.env.TELEGRAM_CHAT_ID,
-              text: `📱 <a href=\"https://wa.me/+${phone}\">${phone}</a>\n👤 ${name}\n\n📝 ${escapeHtml(text)}`,
+              text: `📱 <a href="https://wa.me/+${phone}">${phone}</a>\n👤 ${name}\n\n📝 ${escapeHtml(text)}`,
               parse_mode: 'HTML'
             }
           )
@@ -110,28 +104,24 @@ const FormData = require('form-data')
         }
 
         if (!type) {
-          console.log('⚠️  Unsupported status type, skipping.')
+          console.log('⚠️ Unsupported status type, skipping.')
           continue
         }
 
         console.log(`\n📥 New ${type.toUpperCase()} status from ${phone} (${name})`)
-
-        // Download media
-        console.log('⬇️  Downloading media...')
+        console.log('⬇️ Downloading media...')
         const buffer = await downloadMediaMessage(
-          msg,
-          'buffer',
+          msg, 'buffer',
           { logger: P({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
         )
         console.log(`✅ Downloaded ${buffer.length} bytes`)
 
-        // Build Telegram caption
-        let caption = `📱 <a href=\"https://wa.me/+${phone}\">${phone}</a>\n👤 ${name}`
+        let caption = `📱 <a href="https://wa.me/+${phone}">${phone}</a>\n👤 ${name}`
         if (text) caption += `\n\n📝 ${escapeHtml(text)}`
 
         const form = new FormData()
-        form.append('chat_id',    process.env.TELEGRAM_CHAT_ID)
-        form.append('caption',    caption)
+        form.append('chat_id', process.env.TELEGRAM_CHAT_ID)
+        form.append('caption', caption)
         form.append('parse_mode', 'HTML')
         const ext = type === 'photo'  ? 'jpg'
                   : type === 'video'  ? 'mp4'
@@ -139,8 +129,7 @@ const FormData = require('form-data')
                   :                    'dat'
         form.append(type, buffer, { filename: `status.${ext}` })
 
-        // Upload to Telegram
-        console.log('⬆️  Uploading to Telegram...')
+        console.log('⬆️ Uploading to Telegram...')
         const method = `send${type.charAt(0).toUpperCase() + type.slice(1)}`
         const res = await axios.post(
           `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`,
@@ -156,12 +145,15 @@ const FormData = require('form-data')
       }
     }
   })
+
+  // 7️⃣ Block the event loop so the script never exits
+  await new Promise(() => {})
 })().catch(err => {
   console.error('🚨 Fatal error:', err)
   process.exit(1)
 })
 
-// Helper to escape HTML special chars
+// Escape HTML special characters in user text
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
